@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>last-faith-style-mobile-game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+      --radius-sm: .375rem; --radius-md: .75rem; --radius-lg: 1rem; --radius-xl: 1.25rem; --radius-full: 999px;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --color-bg: #0c0a10;
+      --color-surface: rgba(22, 18, 29, .8);
+      --color-surface-2: rgba(32, 24, 42, .92);
+      --color-surface-offset: rgba(46, 36, 60, .95);
+      --color-border: rgba(231, 220, 255, .12);
+      --color-divider: rgba(231, 220, 255, .08);
+      --color-text: #f1ecff;
+      --color-text-muted: #b6aaca;
+      --color-text-faint: #82789a;
+      --color-text-inverse: #120f18;
+      --color-primary: #9b2c5d;
+      --color-primary-hover: #b33a70;
+      --color-primary-active: #7f234c;
+      --color-blue: #4f98a3;
+      --color-warning: #c88d3c;
+      --color-success: #6b8a46;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+      --shadow-md: 0 10px 30px rgba(0,0,0,.35);
+      --shadow-lg: 0 16px 48px rgba(0,0,0,.45);
+      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: none; text-size-adjust: none; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      color: var(--color-text);
+      background:
+        radial-gradient(circle at 20% 15%, rgba(155,44,93,.22), transparent 26%),
+        radial-gradient(circle at 82% 10%, rgba(79,152,163,.12), transparent 18%),
+        radial-gradient(circle at 50% 100%, rgba(200,141,60,.08), transparent 28%),
+        linear-gradient(180deg, #120f18 0%, #09070c 100%);
+      overflow: hidden;
+    }
+    button { font: inherit; }
+    .skip-link {
+      position: absolute; left: 12px; top: -48px; background: #fff; color: #000; padding: 8px 12px; z-index: 50;
+    }
+    .skip-link:focus { top: 12px; }
+    .game-shell {
+      position: relative;
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .hud {
+      display: flex; justify-content: space-between; gap: var(--space-3);
+      padding: max(env(safe-area-inset-top), var(--space-4)) var(--space-4) var(--space-2);
+      position: relative; z-index: 4;
+    }
+    .hud-panel {
+      min-width: 0;
+      background: linear-gradient(180deg, rgba(37, 29, 48, .84), rgba(20, 16, 27, .8));
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius-full);
+      padding: .6rem .9rem;
+      display: flex; align-items: center; gap: .6rem;
+      font-size: var(--text-sm);
+    }
+    .hud-value { font-variant-numeric: tabular-nums lining-nums; font-weight: 700; }
+    .game-area {
+      position: relative;
+      margin: 0 var(--space-4);
+      border-radius: calc(var(--radius-xl) + 4px);
+      overflow: hidden;
+      border: 1px solid rgba(234, 224, 255, .1);
+      box-shadow: var(--shadow-lg);
+      background: linear-gradient(180deg, rgba(20,15,26,.4), rgba(10,8,13,.7));
+    }
+    canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+    .vignette, .fog {
+      position: absolute; inset: 0; pointer-events: none;
+    }
+    .vignette { background: radial-gradient(circle at 50% 45%, transparent 32%, rgba(0,0,0,.28) 72%, rgba(0,0,0,.62) 100%); z-index: 1; }
+    .fog {
+      background:
+        radial-gradient(circle at 15% 70%, rgba(191, 182, 214, .08), transparent 20%),
+        radial-gradient(circle at 70% 35%, rgba(191, 182, 214, .05), transparent 22%),
+        linear-gradient(180deg, transparent, rgba(120, 94, 154, .05));
+      mix-blend-mode: screen; z-index: 1;
+      animation: drift 10s linear infinite alternate;
+    }
+    .overlay {
+      position: absolute; inset: 0; z-index: 3;
+      display: flex; flex-direction: column; justify-content: space-between;
+      pointer-events: none;
+    }
+    .title-wrap {
+      padding: var(--space-5) var(--space-5) 0;
+      display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4);
+    }
+    .title-card, .quest-card {
+      max-width: min(72vw, 22rem);
+      background: linear-gradient(180deg, rgba(26, 21, 35, .75), rgba(18, 14, 24, .56));
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-md);
+    }
+    .eyebrow { font-size: var(--text-xs); letter-spacing: .18em; text-transform: uppercase; color: var(--color-text-muted); }
+    h1 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      line-height: .95;
+      margin: .35rem 0 .4rem;
+      letter-spacing: .02em;
+      text-wrap: balance;
+    }
+    .title-card p, .quest-card p { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); line-height: 1.45; }
+    .quest-card { align-self: flex-end; text-align: right; }
+    .controls {
+      pointer-events: auto;
+      padding: 0 var(--space-5) var(--space-5);
+      display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4);
+    }
+    .pad {
+      width: min(42vw, 11rem); aspect-ratio: 1;
+      border-radius: 50%; position: relative;
+      background: radial-gradient(circle at 50% 50%, rgba(155,44,93,.14), rgba(18,14,24,.18) 55%, rgba(255,255,255,.02) 56%, rgba(255,255,255,.02) 100%);
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 8px 20px rgba(0,0,0,.3);
+      touch-action: none;
+    }
+    .stick {
+      position: absolute; width: 34%; aspect-ratio: 1; left: 33%; top: 33%; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.2), rgba(155,44,93,.55) 45%, rgba(49,14,31,.86) 100%);
+      border: 1px solid rgba(255,255,255,.1);
+      box-shadow: 0 6px 16px rgba(0,0,0,.35);
+      transition: transform 80ms linear;
+    }
+    .actions {
+      display: grid; grid-template-columns: repeat(2, minmax(70px, 88px)); gap: .9rem;
+    }
+    .action-btn {
+      pointer-events: auto;
+      min-height: 70px; min-width: 70px;
+      border-radius: 50%; border: 1px solid rgba(255,255,255,.1);
+      color: var(--color-text); background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.15), rgba(84, 26, 50, .95) 55%, rgba(30, 10, 18, 1) 100%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 10px 24px rgba(0,0,0,.35);
+      display: grid; place-items: center; font-weight: 700; font-size: var(--text-sm);
+      transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .action-btn:active, .action-btn.is-active { transform: scale(.94); background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.2), rgba(179, 58, 112, .96) 56%, rgba(62, 16, 36, 1) 100%); }
+    .bottom-bar {
+      padding: var(--space-3) var(--space-4) calc(max(env(safe-area-inset-bottom), var(--space-4)));
+      display: flex; gap: var(--space-3); align-items: center; justify-content: space-between;
+      z-index: 5;
+    }
+    .tip {
+      flex: 1;
+      background: rgba(19, 15, 26, .82); border: 1px solid var(--color-divider); border-radius: var(--radius-full);
+      padding: .8rem 1rem; color: var(--color-text-muted); font-size: var(--text-sm);
+      backdrop-filter: blur(8px);
+    }
+    .ghost-btn {
+      pointer-events: auto;
+      min-width: 44px; min-height: 44px; border-radius: var(--radius-full);
+      background: rgba(23,18,31,.84); border: 1px solid var(--color-divider); color: var(--color-text);
+    }
+    .start-screen {
+      position: absolute; inset: 0; z-index: 6; display: grid; place-items: center;
+      background: linear-gradient(180deg, rgba(8,6,10,.24), rgba(8,6,10,.72));
+      padding: var(--space-5);
+    }
+    .start-card {
+      width: min(100%, 28rem);
+      background: linear-gradient(180deg, rgba(20,16,26,.95), rgba(10,8,14,.88));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: var(--space-6);
+      text-align: center;
+    }
+    .start-card h2 {
+      font-family: var(--font-display); font-size: var(--text-xl); margin: .25rem 0 .5rem; line-height: 1;
+    }
+    .start-card p { color: var(--color-text-muted); margin: 0 0 var(--space-5); }
+    .primary-btn {
+      width: 100%; min-height: 52px; border-radius: var(--radius-full); border: 1px solid rgba(255,255,255,.1);
+      background: linear-gradient(180deg, var(--color-primary-hover), var(--color-primary)); color: var(--color-text);
+      box-shadow: 0 14px 28px rgba(155,44,93,.26);
+    }
+    .primary-btn:active { transform: translateY(1px) scale(.99); }
+    .hidden { display: none !important; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    @keyframes drift { from { transform: translate3d(-2%,0,0);} to { transform: translate3d(2%, -1%, 0);} }
+    @media (min-width: 800px) {
+      body { display: grid; place-items: center; padding: 24px; }
+      .game-shell { width: min(460px, 100vw); min-height: min(920px, 100dvh - 48px); border-radius: 28px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+      .game-area { margin-bottom: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#game">Zum Spiel springen</a>
+  <div class="game-shell" aria-label="Düsteres Handy-Webspiel im Gothic Stil">
+    <header class="hud">
+      <div class="hud-panel" aria-label="Lebensenergie"><span>🩸</span><span class="hud-value" id="hpValue">100</span></div>
+      <div class="hud-panel" aria-label="Schattenessenz"><span>✦</span><span class="hud-value" id="echoValue">000</span></div>
+      <button class="ghost-btn" id="pauseBtn" aria-label="Spiel pausieren oder fortsetzen">☾</button>
+    </header>
+
+    <main id="game" class="game-area" aria-label="Spielfeld">
+      <canvas id="gameCanvas" aria-label="Spielbereich"></canvas>
+      <div class="vignette" aria-hidden="true"></div>
+      <div class="fog" aria-hidden="true"></div>
+      <section class="overlay" aria-hidden="true">
+        <div class="title-wrap">
+          <div class="title-card">
+            <div class="eyebrow">Prototype</div>
+            <h1>Nightfall<br>Faith</h1>
+            <p>Mini-Prototype im Stil von düsterem Pixel-Gothic mit Dash, Schwert und unheiligen Kreaturen.</p>
+          </div>
+          <div class="quest-card">
+            <div class="eyebrow">Ziel</div>
+            <p>Überlebe so lange wie möglich, sammle Essenz und halte die Bestien auf Abstand.</p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="pad" id="pad" aria-label="Bewegungssteuerung per Touch">
+            <div class="stick" id="stick"></div>
+          </div>
+          <div class="actions" aria-label="Aktionsknöpfe">
+            <button class="action-btn" id="attackBtn" aria-label="Angreifen">ATK</button>
+            <button class="action-btn" id="dashBtn" aria-label="Ausweichen">DASH</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="start-screen" id="startScreen">
+        <div class="start-card">
+          <div class="eyebrow">Handy Demo</div>
+          <h2>Beginne die Jagd</h2>
+          <p>Links bewegen. Rechts schlagen und dashen. Auf Desktop funktionieren zusätzlich WASD, Pfeiltasten, Leertaste und Shift.</p>
+          <button class="primary-btn" id="startBtn">Spiel starten</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="bottom-bar">
+      <div class="tip" id="statusText">Noch ruht die Finsternis.</div>
+      <button class="ghost-btn" id="restartBtn" aria-label="Run neu starten">↻</button>
+    </footer>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const hpValue = document.getElementById('hpValue');
+    const echoValue = document.getElementById('echoValue');
+    const statusText = document.getElementById('statusText');
+    const startScreen = document.getElementById('startScreen');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const attackBtn = document.getElementById('attackBtn');
+    const dashBtn = document.getElementById('dashBtn');
+    const pad = document.getElementById('pad');
+    const stick = document.getElementById('stick');
+
+    let audioCtx;
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function beep(freq = 440, duration = 0.08, type = 'square', gainValue = 0.025) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(gainValue, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    const state = {
+      running: false,
+      paused: false,
+      last: 0,
+      worldTime: 0,
+      moveX: 0,
+      moveY: 0,
+      echoes: 0,
+      player: null,
+      enemies: [],
+      particles: [],
+      attackCooldown: 0,
+      dashCooldown: 0,
+      spawnTimer: 0,
+      invuln: 0,
+    };
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (!state.player) resetGame();
+    }
+
+    function resetGame() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      state.player = { x: w * 0.5, y: h * 0.58, r: 12, hp: 100, facing: 1, dash: 0, hurtFlash: 0 };
+      state.enemies = [];
+      state.particles = [];
+      state.attackCooldown = 0;
+      state.dashCooldown = 0;
+      state.spawnTimer = 0;
+      state.invuln = 0;
+      state.echoes = 0;
+      hpValue.textContent = '100';
+      echoValue.textContent = '000';
+      statusText.textContent = 'Noch ruht die Finsternis.';
+      for (let i = 0; i < 3; i++) spawnEnemy(true);
+    }
+
+    function spawnEnemy(initial = false) {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const side = Math.floor(Math.random() * 4);
+      let x = 0, y = 0;
+      if (side === 0) { x = -20; y = Math.random() * h; }
+      if (side === 1) { x = w + 20; y = Math.random() * h; }
+      if (side === 2) { x = Math.random() * w; y = -20; }
+      if (side === 3) { x = Math.random() * w; y = h + 20; }
+      state.enemies.push({ x, y, r: 12 + Math.random() * 4, speed: initial ? .55 + Math.random() * .2 : .8 + Math.random() * .45, hp: 1, phase: Math.random() * Math.PI * 2 });
+    }
+
+    function addParticles(x, y, color, count = 8, force = 1.4) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (0.4 + Math.random() * force) * 60;
+        state.particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: .35 + Math.random() * .35, maxLife: .7, color });
+      }
+    }
+
+    function attack() {
+      if (!state.running || state.paused || state.attackCooldown > 0) return;
+      state.attackCooldown = .32;
+      const p = state.player;
+      addParticles(p.x + p.facing * 22, p.y - 2, 'rgba(220,120,160,0.85)', 10, 1.8);
+      beep(210, 0.08, 'sawtooth', 0.03);
+      let hit = false;
+      state.enemies = state.enemies.filter(enemy => {
+        const dx = enemy.x - p.x;
+        const dy = enemy.y - p.y;
+        const dist = Math.hypot(dx, dy);
+        const inFront = Math.sign(dx || 1) === p.facing || Math.abs(dx) < 10;
+        if (dist < 54 && Math.abs(dy) < 36 && inFront) {
+          hit = true;
+          addParticles(enemy.x, enemy.y, 'rgba(155,44,93,0.95)', 12, 2.2);
+          state.echoes += 7;
+          echoValue.textContent = String(state.echoes).padStart(3, '0');
+          return false;
+        }
+        return true;
+      });
+      statusText.textContent = hit ? 'Treffer. Die Bestie zerfällt zu Essenz.' : 'Dein Schlag schneidet nur durch Nebel.';
+    }
+
+    function dash() {
+      if (!state.running || state.paused || state.dashCooldown > 0) return;
+      state.dashCooldown = 1.25;
+      state.player.dash = .18;
+      state.invuln = .22;
+      addParticles(state.player.x, state.player.y, 'rgba(79,152,163,0.8)', 14, 2.6);
+      beep(520, 0.06, 'triangle', 0.025);
+      statusText.textContent = 'Schatten-Dash ausgeführt.';
+    }
+
+    function damagePlayer(amount) {
+      if (state.invuln > 0) return;
+      state.player.hp = Math.max(0, state.player.hp - amount);
+      hpValue.textContent = String(state.player.hp);
+      state.invuln = .55;
+      state.player.hurtFlash = .22;
+      addParticles(state.player.x, state.player.y, 'rgba(255,80,110,0.95)', 14, 2.2);
+      beep(120, 0.15, 'square', 0.035);
+      statusText.textContent = 'Die Finsternis beißt zurück.';
+      if (state.player.hp <= 0) {
+        state.running = false;
+        startScreen.classList.remove('hidden');
+        startBtn.textContent = 'Erneut erwachen';
+        statusText.textContent = 'Du bist gefallen. Tippe zum neuen Run.';
+      }
+    }
+
+    function update(dt) {
+      if (!state.running || state.paused) return;
+      state.worldTime += dt;
+      state.attackCooldown = Math.max(0, state.attackCooldown - dt);
+      state.dashCooldown = Math.max(0, state.dashCooldown - dt);
+      state.spawnTimer += dt;
+      state.invuln = Math.max(0, state.invuln - dt);
+      state.player.hurtFlash = Math.max(0, state.player.hurtFlash - dt);
+
+      const p = state.player;
+      const speed = p.dash > 0 ? 280 : 138;
+      if (p.dash > 0) p.dash = Math.max(0, p.dash - dt);
+
+      const len = Math.hypot(state.moveX, state.moveY) || 1;
+      const mx = state.moveX / len;
+      const my = state.moveY / len;
+      p.x += mx * speed * dt;
+      p.y += my * speed * dt;
+      if (Math.abs(state.moveX) > 0.05) p.facing = state.moveX >= 0 ? 1 : -1;
+      p.x = Math.max(18, Math.min(canvas.clientWidth - 18, p.x));
+      p.y = Math.max(22, Math.min(canvas.clientHeight - 22, p.y));
+
+      if (state.spawnTimer > 1.3 && state.enemies.length < 8) {
+        state.spawnTimer = 0;
+        spawnEnemy();
+      }
+
+      for (const enemy of state.enemies) {
+        enemy.phase += dt * 4;
+        const dx = p.x - enemy.x;
+        const dy = p.y - enemy.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        enemy.x += (dx / dist) * enemy.speed * 60 * dt;
+        enemy.y += (dy / dist) * enemy.speed * 60 * dt + Math.sin(enemy.phase) * 10 * dt;
+        if (dist < enemy.r + p.r + 4) damagePlayer(8);
+      }
+
+      state.particles = state.particles.filter(particle => {
+        particle.life -= dt;
+        particle.x += particle.vx * dt;
+        particle.y += particle.vy * dt;
+        particle.vx *= 0.97;
+        particle.vy *= 0.97;
+        return particle.life > 0;
+      });
+    }
+
+    function drawBackground() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, '#1a1321');
+      sky.addColorStop(.55, '#120d18');
+      sky.addColorStop(1, '#09070c');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = 0; i < 5; i++) {
+        const layerY = h * (0.38 + i * 0.08);
+        ctx.fillStyle = `rgba(18, 14, 24, ${0.2 + i * 0.08})`;
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let x = 0; x <= w; x += w / 7) {
+          const y = layerY + Math.sin((x / w) * Math.PI * 2 + i + state.worldTime * 0.12) * (12 + i * 5);
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = 'rgba(194,177,220,0.1)';
+      ctx.lineWidth = 1;
+      for (let x = 30; x < w; x += 46) {
+        ctx.beginPath();
+        ctx.moveTo(x, h * .55 + Math.sin(x * .05) * 4);
+        ctx.lineTo(x + Math.sin(x) * 6, h * .94);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = 'rgba(200,141,60,0.08)';
+      for (let i = 0; i < 22; i++) {
+        const px = (i * 59 + state.worldTime * 11) % (w + 50) - 25;
+        const py = (i * 43 + Math.sin(i + state.worldTime) * 8) % h;
+        ctx.beginPath(); ctx.arc(px, py, 1.4, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    function drawPlayer() {
+      const p = state.player;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      if (p.hurtFlash > 0) ctx.globalAlpha = 0.65 + Math.sin(p.hurtFlash * 60) * 0.25;
+      if (p.dash > 0) {
+        ctx.fillStyle = 'rgba(79,152,163,0.18)';
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath();
+          ctx.ellipse(-i * 7 * p.facing, 0, 12 - i * 1.8, 8 - i, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.fillStyle = '#e8e0f6';
+      ctx.beginPath(); ctx.arc(0, -12, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2f2437';
+      ctx.fillRect(-8, -6, 16, 20);
+      ctx.fillStyle = '#7a203f';
+      ctx.fillRect(-10, -4, 20, 8);
+      ctx.strokeStyle = '#d9cfe7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(10 * p.facing, 2);
+      ctx.lineTo(26 * p.facing, -12);
+      ctx.stroke();
+      if (state.attackCooldown > 0.18) {
+        ctx.strokeStyle = 'rgba(255,180,210,0.55)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(18 * p.facing, -8, 14, p.facing === 1 ? -0.9 : Math.PI + 0.2, p.facing === 1 ? 0.8 : Math.PI * 1.8);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawEnemy(enemy) {
+      ctx.save();
+      ctx.translate(enemy.x, enemy.y);
+      ctx.fillStyle = 'rgba(155,44,93,0.22)';
+      ctx.beginPath(); ctx.ellipse(0, 16, 18, 8, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a1018';
+      ctx.beginPath();
+      ctx.moveTo(0, -14);
+      ctx.lineTo(14, -2);
+      ctx.lineTo(10, 14);
+      ctx.lineTo(-10, 14);
+      ctx.lineTo(-14, -2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#a44e76';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#f29ab7';
+      ctx.beginPath(); ctx.arc(-4, 0, 1.8, 0, Math.PI * 2); ctx.arc(4, 0, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawParticles() {
+      for (const p of state.particles) {
+        const alpha = Math.max(0, p.life / p.maxLife);
+        ctx.fillStyle = p.color.replace(/rgba\(([^)]+),[^)]+\)/, 'rgba($1,' + alpha + ')');
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.8 + alpha * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawUIHints() {
+      ctx.save();
+      ctx.font = '600 12px Inter';
+      ctx.fillStyle = 'rgba(241,236,255,.45)';
+      ctx.fillText('Swipe links', 18, canvas.clientHeight - 20);
+      ctx.fillText('ATK / DASH rechts', canvas.clientWidth - 116, canvas.clientHeight - 20);
+      ctx.restore();
+    }
+
+    function render() {
+      drawBackground();
+      state.enemies.forEach(drawEnemy);
+      drawPlayer();
+      drawParticles();
+      drawUIHints();
+    }
+
+    function loop(ts) {
+      if (!state.last) state.last = ts;
+      const dt = Math.min((ts - state.last) / 1000, 0.033);
+      state.last = ts;
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    let padPointerId = null;
+    function updatePad(clientX, clientY) {
+      const rect = pad.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      const max = rect.width * 0.26;
+      const dist = Math.hypot(dx, dy) || 1;
+      const clamped = Math.min(dist, max);
+      const nx = dx / dist;
+      const ny = dy / dist;
+      state.moveX = (dx / max);
+      state.moveY = (dy / max);
+      stick.style.transform = `translate(${nx * clamped}px, ${ny * clamped}px)`;
+    }
+    pad.addEventListener('pointerdown', (e) => {
+      padPointerId = e.pointerId;
+      pad.setPointerCapture(e.pointerId);
+      updatePad(e.clientX, e.clientY);
+    });
+    pad.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== padPointerId) return;
+      updatePad(e.clientX, e.clientY);
+    });
+    function releasePad() {
+      padPointerId = null;
+      state.moveX = 0; state.moveY = 0;
+      stick.style.transform = 'translate(0px, 0px)';
+    }
+    pad.addEventListener('pointerup', releasePad);
+    pad.addEventListener('pointercancel', releasePad);
+
+    function pressButton(el, fn) {
+      const down = (e) => { e.preventDefault(); el.classList.add('is-active'); fn(); };
+      const up = () => el.classList.remove('is-active');
+      el.addEventListener('pointerdown', down);
+      el.addEventListener('pointerup', up);
+      el.addEventListener('pointercancel', up);
+      el.addEventListener('click', (e) => e.preventDefault());
+    }
+    pressButton(attackBtn, attack);
+    pressButton(dashBtn, dash);
+
+    const keyMap = new Set();
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+      keyMap.add(e.key.toLowerCase());
+      if (e.key.toLowerCase() === ' ' || e.key.toLowerCase() === 'j') attack();
+      if (e.key.toLowerCase() === 'shift' || e.key.toLowerCase() === 'k') dash();
+    });
+    window.addEventListener('keyup', (e) => keyMap.delete(e.key.toLowerCase()));
+
+    function syncKeyboardMove() {
+      if (padPointerId !== null) return;
+      state.moveX = (keyMap.has('a') || keyMap.has('arrowleft') ? -1 : 0) + (keyMap.has('d') || keyMap.has('arrowright') ? 1 : 0);
+      state.moveY = (keyMap.has('w') || keyMap.has('arrowup') ? -1 : 0) + (keyMap.has('s') || keyMap.has('arrowdown') ? 1 : 0);
+    }
+    setInterval(syncKeyboardMove, 16);
+
+    function startRun() {
+      initAudio();
+      audioCtx && audioCtx.resume();
+      resetGame();
+      state.running = true;
+      state.paused = false;
+      startScreen.classList.add('hidden');
+      startBtn.textContent = 'Spiel starten';
+      statusText.textContent = 'Die Jagd beginnt.';
+      beep(310, 0.12, 'triangle', 0.03);
+    }
+    startBtn.addEventListener('click', startRun);
+    restartBtn.addEventListener('click', startRun);
+    pauseBtn.addEventListener('click', () => {
+      if (!state.player) return;
+      state.paused = !state.paused;
+      statusText.textContent = state.paused ? 'Das Grauen wartet im Stillstand.' : 'Die Schatten setzen sich wieder in Bewegung.';
+    });
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
